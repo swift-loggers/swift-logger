@@ -16,6 +16,7 @@ jobs:
   lint:
     name: Lint
     runs-on: macos-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,6 +53,7 @@ jobs:
   test:
     name: Test (strict concurrency)
     runs-on: macos-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -66,6 +68,7 @@ jobs:
   build-release:
     name: Build (release)
     runs-on: macos-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -80,6 +83,7 @@ jobs:
   library-evolution:
     name: Build (library evolution)
     runs-on: macos-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -94,10 +98,11 @@ jobs:
   docc:
     name: DocC (${{ matrix.product }})
     runs-on: macos-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        product: [Loggers, LoggerPrint, LoggerFiltering, LoggerNoOp]
+        product: [Loggers, LoggerPrint, LoggerFiltering, LoggerNoOp, LoggerLibrary]
     steps:
       - uses: actions/checkout@v4
 

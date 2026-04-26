@@ -26,6 +26,10 @@ let package = Package(
         .library(
             name: "LoggerNoOp",
             targets: ["LoggerNoOp"]
+        ),
+        .library(
+            name: "LoggerLibrary",
+            targets: ["LoggerLibrary"]
         )
     ],
     targets: [
@@ -42,6 +46,15 @@ let package = Package(
             name: "LoggerNoOp",
             dependencies: ["Loggers"]
         ),
+        .target(
+            name: "LoggerLibrary",
+            dependencies: [
+                "Loggers",
+                "LoggerPrint",
+                "LoggerFiltering",
+                "LoggerNoOp"
+            ]
+        ),
         .testTarget(
             name: "LoggersTests",
             dependencies: ["Loggers"]
@@ -57,6 +70,10 @@ let package = Package(
         .testTarget(
             name: "LoggerNoOpTests",
             dependencies: ["LoggerNoOp", "Loggers"]
+        ),
+        .testTarget(
+            name: "LoggerLibraryTests",
+            dependencies: ["LoggerLibrary"]
         )
     ]
 )
