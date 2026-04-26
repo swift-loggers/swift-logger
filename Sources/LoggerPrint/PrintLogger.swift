@@ -24,8 +24,8 @@ public struct PrintLogger: Logger {
     /// A severity threshold for ``PrintLogger``.
     ///
     /// `MinimumLevel` is intentionally severity-only and does not include a
-    /// `disabled` case: per the ``Loggers/LoggerLevel`` contract, `disabled`
-    /// is a per-message sentinel and must not be used as a threshold value.
+    /// `disabled` case: per the `LoggerLevel` contract, `disabled` is a
+    /// per-message sentinel and must not be used as a threshold value.
     /// To turn off logging entirely, use a logger that drops every message
     /// instead of configuring a threshold.
     public enum MinimumLevel: CaseIterable, Sendable {
