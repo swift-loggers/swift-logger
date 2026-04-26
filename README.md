@@ -7,6 +7,21 @@ severity levels plus a `disabled` sentinel value), and a `LoggerDomain`
 subsystem identifier. Concrete loggers and integrations ship outside
 the `Loggers` core product.
 
+## Products
+
+This package ships five products:
+
+- `Loggers` — protocol-only core. The `Logger` protocol, `LoggerLevel`,
+  and `LoggerDomain`. Zero dependencies.
+- `LoggerPrint` — `PrintLogger`, a backend that writes log lines to
+  standard output.
+- `LoggerFiltering` — `DomainFilteredLogger`, a per-domain threshold
+  decorator.
+- `LoggerNoOp` — `NoOpLogger`, a backend that drops every message
+  without evaluating its closure.
+- `LoggerLibrary` — umbrella that re-exports the four products above
+  for consumers who want the full surface from a single import.
+
 ## Installation
 
 Add `swift-logger` as a dependency in `Package.swift`. Until the first
@@ -16,11 +31,23 @@ tagged release, track `main`:
 .package(url: "https://github.com/swift-loggers/swift-logger", branch: "main")
 ```
 
-Add the `Loggers` product to your target dependencies:
+Then pick one of the products as a target dependency:
 
 ```swift
+// Protocol-only, zero dependencies, write your own backend:
 .product(name: "Loggers", package: "swift-logger")
+
+// Individual backends:
+.product(name: "LoggerPrint", package: "swift-logger")
+.product(name: "LoggerFiltering", package: "swift-logger")
+.product(name: "LoggerNoOp", package: "swift-logger")
+
+// Umbrella that re-exports all of the above:
+.product(name: "LoggerLibrary", package: "swift-logger")
 ```
+
+With `LoggerLibrary` a single `import LoggerLibrary` exposes the
+protocol, `PrintLogger`, `DomainFilteredLogger`, and `NoOpLogger`.
 
 ## Conforming to `Logger`
 
@@ -113,8 +140,10 @@ of the public contract; it is suitable for log file or JSON output.
 
 ## Companion implementations
 
-Concrete logger implementations and integrations ship outside the
-`Loggers` core product.
+`LoggerPrint`, `LoggerFiltering`, and `LoggerNoOp` ship in this
+package. Backends with external dependencies (for example, swift-log
+or TCA integrations) ship in separate repositories under the
+`swift-loggers` organization.
 
 ## Platforms
 
