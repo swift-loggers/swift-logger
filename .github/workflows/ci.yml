@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tool versions
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Install SwiftFormat and SwiftLint
+        run: brew install swiftformat swiftlint
+
+      - name: Lint tool versions
+        run: |
+          swiftformat --version
+          swiftlint version
+
+      - name: SwiftFormat lint
+        run: swiftformat --lint . --config .swiftformat
+
+      - name: SwiftLint strict
+        run: swiftlint --strict
+
+      - name: Whitespace check
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --depth=1 origin "${{ github.base_ref }}"
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
+          else
+            git diff --check "${{ github.event.before }}" "${{ github.sha }}"
+          fi
+
+  test:
+    name: Test (strict concurrency)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tool versions
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Test
+        run: swift test -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
+
+  build-release:
+    name: Build (release)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tool versions
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Build release
+        run: swift build -c release -Xswiftc -warnings-as-errors
+
+  library-evolution:
+    name: Build (library evolution)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tool versions
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Build with library evolution
+        run: swift build -Xswiftc -enable-library-evolution -Xswiftc -emit-module-interface -Xswiftc -warnings-as-errors
+
+  docc:
+    name: DocC (${{ matrix.product }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [Loggers, LoggerPrint, LoggerFiltering, LoggerNoOp]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tool versions
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: DocC build
+        run: |
+          xcodebuild docbuild \
+            -scheme ${{ matrix.product }} \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath /tmp/docc-${{ matrix.product }} \
+            OTHER_DOCC_FLAGS="--warnings-as-errors"
