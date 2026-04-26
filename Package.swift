@@ -18,12 +18,20 @@ let package = Package(
         .library(
             name: "LoggerPrint",
             targets: ["LoggerPrint"]
+        ),
+        .library(
+            name: "LoggerFiltering",
+            targets: ["LoggerFiltering"]
         )
     ],
     targets: [
         .target(name: "Loggers"),
         .target(
             name: "LoggerPrint",
+            dependencies: ["Loggers"]
+        ),
+        .target(
+            name: "LoggerFiltering",
             dependencies: ["Loggers"]
         ),
         .testTarget(
@@ -33,6 +41,10 @@ let package = Package(
         .testTarget(
             name: "LoggerPrintTests",
             dependencies: ["LoggerPrint", "Loggers"]
+        ),
+        .testTarget(
+            name: "LoggerFilteringTests",
+            dependencies: ["LoggerFiltering", "Loggers"]
         )
     ]
 )
