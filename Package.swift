@@ -14,13 +14,25 @@ let package = Package(
         .library(
             name: "Loggers",
             targets: ["Loggers"]
+        ),
+        .library(
+            name: "LoggerPrint",
+            targets: ["LoggerPrint"]
         )
     ],
     targets: [
         .target(name: "Loggers"),
+        .target(
+            name: "LoggerPrint",
+            dependencies: ["Loggers"]
+        ),
         .testTarget(
             name: "LoggersTests",
             dependencies: ["Loggers"]
+        ),
+        .testTarget(
+            name: "LoggerPrintTests",
+            dependencies: ["LoggerPrint", "Loggers"]
         )
     ]
 )
