@@ -1,9 +1,11 @@
 name: CI
 
 on:
-  pull_request:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -13,8 +15,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Change detection -- skip expensive CI for draft PRs and for
+  # changes that do not touch code, configs, or workflows.
+  changes:
+    name: Detect Changes
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    outputs:
+      ci_relevant: ${{ steps.filter.outputs.ci_relevant }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ci_relevant:
+              - 'Package.swift'
+              - 'Package.resolved'
+              - 'Sources/**'
+              - 'Tests/**'
+              - '.github/workflows/**'
+              - '.swiftformat'
+              - '.swiftlint.yml'
+              - '.swift-version'
+
   lint:
     name: Lint
+    needs: changes
+    if: needs.changes.outputs.ci_relevant == 'true'
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
@@ -52,6 +82,8 @@ jobs:
 
   test:
     name: Test (strict concurrency)
+    needs: changes
+    if: needs.changes.outputs.ci_relevant == 'true'
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
@@ -67,6 +99,8 @@ jobs:
 
   build-release:
     name: Build (release)
+    needs: changes
+    if: needs.changes.outputs.ci_relevant == 'true'
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
@@ -82,6 +116,8 @@ jobs:
 
   library-evolution:
     name: Build (library evolution)
+    needs: changes
+    if: needs.changes.outputs.ci_relevant == 'true'
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
@@ -97,6 +133,8 @@ jobs:
 
   docc:
     name: DocC (${{ matrix.product }})
+    needs: changes
+    if: needs.changes.outputs.ci_relevant == 'true'
     runs-on: macos-latest
     timeout-minutes: 10
     strategy:
