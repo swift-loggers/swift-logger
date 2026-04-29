@@ -50,7 +50,7 @@ struct PrintLoggerTests {
     func exactOutputWithInjectedDateAndFormatter() {
         let recorder = StringRecorder()
         let logger = PrintLogger(
-            minimumLevel: .verbose,
+            minimumLevel: .trace,
             dateProvider: { fixedDate },
             timestampFormatter: { _ in "FIXED" },
             sink: { recorder.append($0) }
@@ -63,7 +63,7 @@ struct PrintLoggerTests {
     func defaultMinimumLevelIsWarning() throws {
         let recorder = StringRecorder()
         let logger = PrintLogger(sink: { recorder.append($0) })
-        logger.log(.verbose, "D", "v")
+        logger.log(.trace, "D", "v")
         logger.log(.debug, "D", "d")
         logger.log(.info, "D", "i")
         logger.log(.warning, "D", "w")
@@ -109,7 +109,7 @@ struct PrintLoggerTests {
         let messageCounter = CallCounter()
         let attributesCounter = CallCounter()
         let logger = PrintLogger(
-            minimumLevel: .verbose,
+            minimumLevel: .trace,
             dateProvider: { dateCounter.tick(); return fixedDate },
             timestampFormatter: { _ in formatterCounter.tick(); return "TS" },
             sink: { _ in sinkCounter.tick() }
@@ -131,22 +131,26 @@ struct PrintLoggerTests {
     func convenienceMethods() {
         let recorder = StringRecorder()
         let logger = PrintLogger(
-            minimumLevel: .verbose,
+            minimumLevel: .trace,
             dateProvider: { fixedDate },
             timestampFormatter: { _ in "TS" },
             sink: { recorder.append($0) }
         )
-        logger.verbose("D", "v")
+        logger.trace("D", "t")
         logger.debug("D", "d")
         logger.info("D", "i")
+        logger.notice("D", "n")
         logger.warning("D", "w")
         logger.error("D", "e")
+        logger.critical("D", "c")
         #expect(recorder.entries == [
-            "[TS] [verbose] [D] v",
+            "[TS] [trace] [D] t",
             "[TS] [debug] [D] d",
             "[TS] [info] [D] i",
+            "[TS] [notice] [D] n",
             "[TS] [warning] [D] w",
-            "[TS] [error] [D] e"
+            "[TS] [error] [D] e",
+            "[TS] [critical] [D] c"
         ])
     }
 
@@ -156,7 +160,7 @@ struct PrintLoggerTests {
         let messageCounter = CallCounter()
         let attributesCounter = CallCounter()
         let logger = PrintLogger(
-            minimumLevel: .verbose,
+            minimumLevel: .trace,
             dateProvider: { fixedDate },
             timestampFormatter: { _ in "TS" },
             sink: { recorder.append($0) }
@@ -178,7 +182,7 @@ struct PrintLoggerTests {
     func publicSegmentRendersVerbatim() {
         let recorder = StringRecorder()
         let logger = PrintLogger(
-            minimumLevel: .verbose,
+            minimumLevel: .trace,
             dateProvider: { fixedDate },
             timestampFormatter: { _ in "TS" },
             sink: { recorder.append($0) }
@@ -192,7 +196,7 @@ struct PrintLoggerTests {
     func privateSegmentRedacted() {
         let recorder = StringRecorder()
         let logger = PrintLogger(
-            minimumLevel: .verbose,
+            minimumLevel: .trace,
             dateProvider: { fixedDate },
             timestampFormatter: { _ in "TS" },
             sink: { recorder.append($0) }
@@ -206,7 +210,7 @@ struct PrintLoggerTests {
     func sensitiveSegmentRedacted() {
         let recorder = StringRecorder()
         let logger = PrintLogger(
-            minimumLevel: .verbose,
+            minimumLevel: .trace,
             dateProvider: { fixedDate },
             timestampFormatter: { _ in "TS" },
             sink: { recorder.append($0) }
@@ -220,7 +224,7 @@ struct PrintLoggerTests {
     func publicAttributeRenders() {
         let recorder = StringRecorder()
         let logger = PrintLogger(
-            minimumLevel: .verbose,
+            minimumLevel: .trace,
             dateProvider: { fixedDate },
             timestampFormatter: { _ in "TS" },
             sink: { recorder.append($0) }
@@ -233,7 +237,7 @@ struct PrintLoggerTests {
     func privateAttributeRedacted() {
         let recorder = StringRecorder()
         let logger = PrintLogger(
-            minimumLevel: .verbose,
+            minimumLevel: .trace,
             dateProvider: { fixedDate },
             timestampFormatter: { _ in "TS" },
             sink: { recorder.append($0) }
@@ -250,7 +254,7 @@ struct PrintLoggerTests {
     func sensitiveAttributeRedacted() {
         let recorder = StringRecorder()
         let logger = PrintLogger(
-            minimumLevel: .verbose,
+            minimumLevel: .trace,
             dateProvider: { fixedDate },
             timestampFormatter: { _ in "TS" },
             sink: { recorder.append($0) }
@@ -272,18 +276,41 @@ struct PrintLoggerTests {
     @Test("MinimumLevel allCases is in declaration order")
     func minimumLevelAllCasesOrder() {
         #expect(PrintLogger.MinimumLevel.allCases == [
-            .verbose, .debug, .info, .warning, .error
+            .trace, .debug, .info, .notice, .warning, .error, .critical
         ])
     }
 
     @Test(
         "Threshold filtering pins emitted levels for each MinimumLevel",
         arguments: [
-            (PrintLogger.MinimumLevel.verbose, [LoggerLevel.verbose, .debug, .info, .warning, .error]),
-            (PrintLogger.MinimumLevel.debug, [LoggerLevel.debug, .info, .warning, .error]),
-            (PrintLogger.MinimumLevel.info, [LoggerLevel.info, .warning, .error]),
-            (PrintLogger.MinimumLevel.warning, [LoggerLevel.warning, .error]),
-            (PrintLogger.MinimumLevel.error, [LoggerLevel.error])
+            (
+                PrintLogger.MinimumLevel.trace,
+                [LoggerLevel.trace, .debug, .info, .notice, .warning, .error, .critical]
+            ),
+            (
+                PrintLogger.MinimumLevel.debug,
+                [LoggerLevel.debug, .info, .notice, .warning, .error, .critical]
+            ),
+            (
+                PrintLogger.MinimumLevel.info,
+                [LoggerLevel.info, .notice, .warning, .error, .critical]
+            ),
+            (
+                PrintLogger.MinimumLevel.notice,
+                [LoggerLevel.notice, .warning, .error, .critical]
+            ),
+            (
+                PrintLogger.MinimumLevel.warning,
+                [LoggerLevel.warning, .error, .critical]
+            ),
+            (
+                PrintLogger.MinimumLevel.error,
+                [LoggerLevel.error, .critical]
+            ),
+            (
+                PrintLogger.MinimumLevel.critical,
+                [LoggerLevel.critical]
+            )
         ]
     )
     func thresholdEmissionMatrix(threshold: PrintLogger.MinimumLevel, expected: [LoggerLevel]) {
@@ -294,7 +321,9 @@ struct PrintLoggerTests {
             timestampFormatter: { _ in "TS" },
             sink: { recorder.append($0) }
         )
-        let allSeverities: [LoggerLevel] = [.verbose, .debug, .info, .warning, .error]
+        let allSeverities: [LoggerLevel] = [
+            .trace, .debug, .info, .notice, .warning, .error, .critical
+        ]
         for level in allSeverities {
             logger.log(level, "D", "msg")
         }

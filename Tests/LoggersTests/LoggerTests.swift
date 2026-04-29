@@ -79,13 +79,13 @@ extension LoggerDomain {
 struct LoggerForwardingTests {
     // MARK: String convenience overloads
 
-    @Test("verbose(String) forwards as .text segment at .verbose")
-    func forwardsVerboseString() {
+    @Test("trace(String) forwards as .text segment at .trace")
+    func forwardsTraceString() {
         let logger = SpyLogger()
-        logger.verbose("Test", "msg")
+        logger.trace("Test", "msg")
         #expect(logger.calls == [
             SpyLogger.Entry(
-                level: .verbose,
+                level: .trace,
                 domain: "Test",
                 message: "msg",
                 attributes: []
@@ -135,6 +135,20 @@ struct LoggerForwardingTests {
         ])
     }
 
+    @Test("notice(String) forwards as .text segment at .notice")
+    func forwardsNoticeString() {
+        let logger = SpyLogger()
+        logger.notice("Test", "msg")
+        #expect(logger.calls == [
+            SpyLogger.Entry(
+                level: .notice,
+                domain: "Test",
+                message: "msg",
+                attributes: []
+            )
+        ])
+    }
+
     @Test("error(String) forwards as .text segment at .error")
     func forwardsErrorString() {
         let logger = SpyLogger()
@@ -142,6 +156,20 @@ struct LoggerForwardingTests {
         #expect(logger.calls == [
             SpyLogger.Entry(
                 level: .error,
+                domain: "Test",
+                message: "msg",
+                attributes: []
+            )
+        ])
+    }
+
+    @Test("critical(String) forwards as .text segment at .critical")
+    func forwardsCriticalString() {
+        let logger = SpyLogger()
+        logger.critical("Test", "msg")
+        #expect(logger.calls == [
+            SpyLogger.Entry(
+                level: .critical,
                 domain: "Test",
                 message: "msg",
                 attributes: []
@@ -163,11 +191,13 @@ struct LoggerForwardingTests {
     func stringConveniencesRemainLazyWhenDropped() {
         let logger = DroppingLogger()
         let counter = CallCounter()
-        logger.verbose("Test", counter.tick("payload"))
+        logger.trace("Test", counter.tick("payload"))
         logger.debug("Test", counter.tick("payload"))
         logger.info("Test", counter.tick("payload"))
+        logger.notice("Test", counter.tick("payload"))
         logger.warning("Test", counter.tick("payload"))
         logger.error("Test", counter.tick("payload"))
+        logger.critical("Test", counter.tick("payload"))
         #expect(counter.value == 0)
     }
 
@@ -175,11 +205,13 @@ struct LoggerForwardingTests {
     func logMessageConveniencesRemainLazyWhenDropped() {
         let logger = DroppingLogger()
         let counter = CallCounter()
-        logger.verbose("Test", counter.tick(LogMessage(segments: [LogSegment("v")])))
+        logger.trace("Test", counter.tick(LogMessage(segments: [LogSegment("t")])))
         logger.debug("Test", counter.tick(LogMessage(segments: [LogSegment("d")])))
         logger.info("Test", counter.tick(LogMessage(segments: [LogSegment("i")])))
+        logger.notice("Test", counter.tick(LogMessage(segments: [LogSegment("n")])))
         logger.warning("Test", counter.tick(LogMessage(segments: [LogSegment("w")])))
         logger.error("Test", counter.tick(LogMessage(segments: [LogSegment("e")])))
+        logger.critical("Test", counter.tick(LogMessage(segments: [LogSegment("c")])))
         #expect(counter.value == 0)
     }
 
@@ -236,14 +268,14 @@ struct LoggerForwardingTests {
 
 @Suite("Logger LogMessage convenience overloads")
 struct LoggerLogMessageConvenienceTests {
-    @Test("verbose(LogMessage) forwards at .verbose")
-    func forwardsVerbose() {
+    @Test("trace(LogMessage) forwards at .trace")
+    func forwardsTrace() {
         let logger = LogMessageSpyLogger()
-        let message = LogMessage(segments: [LogSegment("v")])
-        logger.verbose("Test", message)
+        let message = LogMessage(segments: [LogSegment("t")])
+        logger.trace("Test", message)
         #expect(logger.calls == [
             LogMessageSpyLogger.Entry(
-                level: .verbose,
+                level: .trace,
                 domain: "Test",
                 message: message,
                 attributes: []
@@ -296,6 +328,21 @@ struct LoggerLogMessageConvenienceTests {
         ])
     }
 
+    @Test("notice(LogMessage) forwards at .notice")
+    func forwardsNotice() {
+        let logger = LogMessageSpyLogger()
+        let message = LogMessage(segments: [LogSegment("n")])
+        logger.notice("Test", message)
+        #expect(logger.calls == [
+            LogMessageSpyLogger.Entry(
+                level: .notice,
+                domain: "Test",
+                message: message,
+                attributes: []
+            )
+        ])
+    }
+
     @Test("error(LogMessage) forwards at .error")
     func forwardsError() {
         let logger = LogMessageSpyLogger()
@@ -304,6 +351,21 @@ struct LoggerLogMessageConvenienceTests {
         #expect(logger.calls == [
             LogMessageSpyLogger.Entry(
                 level: .error,
+                domain: "Test",
+                message: message,
+                attributes: []
+            )
+        ])
+    }
+
+    @Test("critical(LogMessage) forwards at .critical")
+    func forwardsCritical() {
+        let logger = LogMessageSpyLogger()
+        let message = LogMessage(segments: [LogSegment("c")])
+        logger.critical("Test", message)
+        #expect(logger.calls == [
+            LogMessageSpyLogger.Entry(
+                level: .critical,
                 domain: "Test",
                 message: message,
                 attributes: []

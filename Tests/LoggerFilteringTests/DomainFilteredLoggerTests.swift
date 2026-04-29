@@ -80,7 +80,7 @@ struct DomainFilteredLoggerTests {
     @Test("MinimumLevel allCases is in declaration order")
     func minimumLevelAllCasesOrder() {
         #expect(DomainFilteredLogger.MinimumLevel.allCases == [
-            .verbose, .debug, .info, .warning, .error
+            .trace, .debug, .info, .notice, .warning, .error, .critical
         ])
     }
 
@@ -96,7 +96,7 @@ struct DomainFilteredLoggerTests {
         let attributesCounter = CallCounter()
         let filtered = DomainFilteredLogger(
             upstream: upstream,
-            defaultMinimumLevel: .verbose
+            defaultMinimumLevel: .trace
         )
         filtered.log(
             .disabled,
@@ -134,7 +134,7 @@ struct DomainFilteredLoggerTests {
         let upstream = ForwardingLogger()
         let filtered = DomainFilteredLogger(
             upstream: upstream,
-            defaultMinimumLevel: .verbose
+            defaultMinimumLevel: .trace
         )
         filtered.log(
             .info,
@@ -159,7 +159,7 @@ struct DomainFilteredLoggerTests {
         let attributesCounter = CallCounter()
         let filtered = DomainFilteredLogger(
             upstream: upstream,
-            defaultMinimumLevel: .verbose
+            defaultMinimumLevel: .trace
         )
         filtered.log(
             .info,
@@ -176,7 +176,7 @@ struct DomainFilteredLoggerTests {
         let upstream = ForwardingLogger()
         let filtered = DomainFilteredLogger(
             upstream: upstream,
-            defaultMinimumLevel: .verbose,
+            defaultMinimumLevel: .trace,
             domainMinimumLevels: ["Network": .error]
         )
         filtered.log(.info, "Network", "raised: should be dropped")
@@ -190,7 +190,7 @@ struct DomainFilteredLoggerTests {
         let filtered = DomainFilteredLogger(
             upstream: upstream,
             defaultMinimumLevel: .error,
-            domainMinimumLevels: ["Network": .verbose]
+            domainMinimumLevels: ["Network": .trace]
         )
         filtered.log(.info, "Network", "lowered: should pass")
         filtered.log(.info, "Other", "default: should be dropped")
@@ -203,7 +203,7 @@ struct DomainFilteredLoggerTests {
         let filtered = DomainFilteredLogger(
             upstream: upstream,
             defaultMinimumLevel: .warning,
-            domainMinimumLevels: ["Network": .verbose, "Database": .error]
+            domainMinimumLevels: ["Network": .trace, "Database": .error]
         )
         filtered.log(.info, "Unknown", "below default warning, dropped")
         filtered.log(.warning, "Unknown", "at default warning, passed")
@@ -213,11 +213,34 @@ struct DomainFilteredLoggerTests {
     @Test(
         "Threshold filtering pins emitted levels for each MinimumLevel",
         arguments: [
-            (DomainFilteredLogger.MinimumLevel.verbose, [LoggerLevel.verbose, .debug, .info, .warning, .error]),
-            (DomainFilteredLogger.MinimumLevel.debug, [LoggerLevel.debug, .info, .warning, .error]),
-            (DomainFilteredLogger.MinimumLevel.info, [LoggerLevel.info, .warning, .error]),
-            (DomainFilteredLogger.MinimumLevel.warning, [LoggerLevel.warning, .error]),
-            (DomainFilteredLogger.MinimumLevel.error, [LoggerLevel.error])
+            (
+                DomainFilteredLogger.MinimumLevel.trace,
+                [LoggerLevel.trace, .debug, .info, .notice, .warning, .error, .critical]
+            ),
+            (
+                DomainFilteredLogger.MinimumLevel.debug,
+                [LoggerLevel.debug, .info, .notice, .warning, .error, .critical]
+            ),
+            (
+                DomainFilteredLogger.MinimumLevel.info,
+                [LoggerLevel.info, .notice, .warning, .error, .critical]
+            ),
+            (
+                DomainFilteredLogger.MinimumLevel.notice,
+                [LoggerLevel.notice, .warning, .error, .critical]
+            ),
+            (
+                DomainFilteredLogger.MinimumLevel.warning,
+                [LoggerLevel.warning, .error, .critical]
+            ),
+            (
+                DomainFilteredLogger.MinimumLevel.error,
+                [LoggerLevel.error, .critical]
+            ),
+            (
+                DomainFilteredLogger.MinimumLevel.critical,
+                [LoggerLevel.critical]
+            )
         ]
     )
     func thresholdEmissionMatrix(threshold: DomainFilteredLogger.MinimumLevel, expected: [LoggerLevel]) {
@@ -226,7 +249,9 @@ struct DomainFilteredLoggerTests {
             upstream: upstream,
             defaultMinimumLevel: threshold
         )
-        let allSeverities: [LoggerLevel] = [.verbose, .debug, .info, .warning, .error]
+        let allSeverities: [LoggerLevel] = [
+            .trace, .debug, .info, .notice, .warning, .error, .critical
+        ]
         for level in allSeverities {
             filtered.log(level, "D", "msg")
         }

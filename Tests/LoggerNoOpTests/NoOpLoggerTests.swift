@@ -31,11 +31,13 @@ struct NoOpLoggerTests {
         "Message autoclosure is not evaluated for any LoggerLevel",
         arguments: [
             LoggerLevel.disabled,
-            .verbose,
+            .trace,
             .debug,
             .info,
+            .notice,
             .warning,
-            .error
+            .error,
+            .critical
         ]
     )
     func messageAutoclosureNotEvaluatedForAnyLevel(level: LoggerLevel) {
@@ -49,11 +51,13 @@ struct NoOpLoggerTests {
         "Attributes autoclosure is not evaluated for any LoggerLevel",
         arguments: [
             LoggerLevel.disabled,
-            .verbose,
+            .trace,
             .debug,
             .info,
+            .notice,
             .warning,
-            .error
+            .error,
+            .critical
         ]
     )
     func attributesAutoclosureNotEvaluatedForAnyLevel(level: LoggerLevel) {
@@ -72,11 +76,13 @@ struct NoOpLoggerTests {
     func conveniencesDoNotEvaluateMessage() {
         let logger = NoOpLogger()
         let counter = CallCounter()
-        logger.verbose("Test", recordEvaluationAndReturn(counter, "v"))
+        logger.trace("Test", recordEvaluationAndReturn(counter, "t"))
         logger.debug("Test", recordEvaluationAndReturn(counter, "d"))
         logger.info("Test", recordEvaluationAndReturn(counter, "i"))
+        logger.notice("Test", recordEvaluationAndReturn(counter, "n"))
         logger.warning("Test", recordEvaluationAndReturn(counter, "w"))
         logger.error("Test", recordEvaluationAndReturn(counter, "e"))
+        logger.critical("Test", recordEvaluationAndReturn(counter, "c"))
         #expect(counter.value == 0)
     }
 
@@ -84,11 +90,13 @@ struct NoOpLoggerTests {
     func conveniencesDoNotEvaluateAttributes() {
         let logger = NoOpLogger()
         let counter = CallCounter()
-        logger.verbose("Test", "v", attributes: recordEvaluationAndReturn(counter, []))
+        logger.trace("Test", "t", attributes: recordEvaluationAndReturn(counter, []))
         logger.debug("Test", "d", attributes: recordEvaluationAndReturn(counter, []))
         logger.info("Test", "i", attributes: recordEvaluationAndReturn(counter, []))
+        logger.notice("Test", "n", attributes: recordEvaluationAndReturn(counter, []))
         logger.warning("Test", "w", attributes: recordEvaluationAndReturn(counter, []))
         logger.error("Test", "e", attributes: recordEvaluationAndReturn(counter, []))
+        logger.critical("Test", "c", attributes: recordEvaluationAndReturn(counter, []))
         #expect(counter.value == 0)
     }
 

@@ -5,7 +5,7 @@ A protocol-only logging core for Swift with no third-party dependencies
 It provides a lightweight abstraction layer over logging backends with
 first-class support for structured attributes and privacy-aware string
 interpolation. The package defines a `Logger` protocol, the `LogMessage`
-/ `LogAttribute` / `LogRecord` payload types, a `LoggerLevel` (five
+/ `LogAttribute` / `LogRecord` payload types, a `LoggerLevel` (seven
 severity levels plus a `disabled` sentinel), and a `LoggerDomain`
 subsystem identifier. Concrete loggers and integrations ship outside
 the `Loggers` core product.
@@ -22,7 +22,7 @@ This package ships five products:
   standard output. Honors privacy annotations via redaction.
 - `LoggerFiltering` -- `DomainFilteredLogger`, a per-domain threshold
   decorator that forwards surviving entries upstream without
-  evaluating the lazy payload itself.
+  evaluating the lazy payload.
 - `LoggerNoOp` -- `NoOpLogger`, a backend that drops every entry without
   evaluating either the message or attributes closure.
 - `LoggerLibrary` -- umbrella that re-exports the four products above
@@ -84,7 +84,7 @@ struct AuthService {
         let success = true
         logger.info(
             .auth,
-            "Sign-in \(success ? "succeeded" : "failed") for \(username, privacy: .private)",
+            "Sign-in \(success ? "succeeded" : "failed")",
             attributes: [
                 LogAttribute("http.method", "POST"),
                 LogAttribute("http.route", "/v1/auth/sign-in"),
@@ -142,10 +142,10 @@ struct StdoutLogger: Logger {
 }
 ```
 
-The convenience methods `verbose`, `debug`, `info`, `warning`, and
-`error` are protocol extensions in two flavors -- `String` and
-`LogMessage` -- both with `attributes:` defaulting to `[]`. Conforming
-types do not need to reimplement them.
+The convenience methods `trace`, `debug`, `info`, `notice`,
+`warning`, `error`, and `critical` are protocol extensions in two
+flavors -- `String` and `LogMessage` -- both with `attributes:`
+defaulting to `[]`. Conforming types do not need to reimplement them.
 
 > **Important:** Implementations MUST NOT evaluate the `message` or
 > `attributes` closures when `level == .disabled`, and threshold-aware
@@ -240,8 +240,9 @@ produces a debug-friendly JSON shape.
 
 ## Levels
 
-`LoggerLevel` distinguishes five severity levels (`verbose`, `debug`,
-`info`, `warning`, `error`) and a `disabled` sentinel.
+`LoggerLevel` is a transport-neutral severity model. It distinguishes
+seven severity levels (`trace`, `debug`, `info`, `notice`, `warning`,
+`error`, `critical`) and a `disabled` sentinel.
 
 `disabled` is a sentinel, not a severity level. It must never be used
 as a threshold. It exists solely to mark individual log calls as
@@ -251,8 +252,23 @@ the message or attributes closures.
 The default severity (`LoggerLevel.defaultLevel`) is `.warning`.
 
 Threshold-aware adapters expose their own nested
-`MinimumLevel: CaseIterable, Sendable` enum with exactly five cases:
-`.verbose`, `.debug`, `.info`, `.warning`, `.error`.
+`MinimumLevel: CaseIterable, Sendable` enum with exactly seven cases:
+`.trace`, `.debug`, `.info`, `.notice`, `.warning`, `.error`,
+`.critical`. `.disabled` is never a valid threshold value.
+
+Adapters that target a backend with a different level set map each
+`LoggerLevel` onto the closest native severity. The reference
+mappings used by the shipped adapters and the planned bridges are:
+
+| `LoggerLevel` | OSLog       | swift-log  |
+|---------------|-------------|------------|
+| `trace`       | `debug`     | `trace`    |
+| `debug`       | `debug`     | `debug`    |
+| `info`        | `info`      | `info`     |
+| `notice`      | `default`   | `notice`   |
+| `warning`     | `default`   | `warning`  |
+| `error`       | `error`     | `error`    |
+| `critical`    | `fault`     | `critical` |
 
 ## Domains
 
