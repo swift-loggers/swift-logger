@@ -65,9 +65,9 @@ let package = Package(
 
 ## Quick start
 
-The same `logger` carries plain strings, privacy-annotated
-interpolation, and structured attributes -- one shape per operation,
-not all three crammed into a single method:
+Services hold a `Logger` and emit events at the matching severity; the
+same protocol carries plain strings, privacy-aware interpolation, and
+structured attributes:
 
 ```swift
 import LoggerLibrary
