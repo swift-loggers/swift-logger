@@ -37,7 +37,7 @@ private final class StringRecorder: @unchecked Sendable {
     }
 }
 
-private func recordEvaluationAndReturn(_ counter: CallCounter, _ value: String) -> String {
+private func recordEvaluationAndReturn<T>(_ counter: CallCounter, _ value: T) -> T {
     counter.tick()
     return value
 }
@@ -75,42 +75,56 @@ struct PrintLoggerTests {
         #expect(lines[1].contains("[error]"))
     }
 
-    @Test("Filtering does not evaluate date, formatter, message, or sink")
+    @Test("Filtering does not evaluate date, formatter, message, attributes, or sink")
     func filteringDoesNotEvaluate() {
         let dateCounter = CallCounter()
         let formatterCounter = CallCounter()
         let sinkCounter = CallCounter()
         let messageCounter = CallCounter()
+        let attributesCounter = CallCounter()
         let logger = PrintLogger(
             minimumLevel: .error,
             dateProvider: { dateCounter.tick(); return fixedDate },
             timestampFormatter: { _ in formatterCounter.tick(); return "TS" },
             sink: { _ in sinkCounter.tick() }
         )
-        logger.log(.info, "D", recordEvaluationAndReturn(messageCounter, "msg"))
+        logger.log(
+            .info,
+            "D",
+            recordEvaluationAndReturn(messageCounter, "msg"),
+            attributes: recordEvaluationAndReturn(attributesCounter, [LogAttribute("k", "v")])
+        )
         #expect(dateCounter.value == 0)
         #expect(formatterCounter.value == 0)
         #expect(sinkCounter.value == 0)
         #expect(messageCounter.value == 0)
+        #expect(attributesCounter.value == 0)
     }
 
-    @Test("Disabled level on a message is dropped without evaluation")
+    @Test("Disabled level is dropped without evaluation")
     func disabledLevelIsDropped() {
         let dateCounter = CallCounter()
         let formatterCounter = CallCounter()
         let sinkCounter = CallCounter()
         let messageCounter = CallCounter()
+        let attributesCounter = CallCounter()
         let logger = PrintLogger(
             minimumLevel: .verbose,
             dateProvider: { dateCounter.tick(); return fixedDate },
             timestampFormatter: { _ in formatterCounter.tick(); return "TS" },
             sink: { _ in sinkCounter.tick() }
         )
-        logger.log(.disabled, "D", recordEvaluationAndReturn(messageCounter, "msg"))
+        logger.log(
+            .disabled,
+            "D",
+            recordEvaluationAndReturn(messageCounter, "msg"),
+            attributes: recordEvaluationAndReturn(attributesCounter, [LogAttribute("k", "v")])
+        )
         #expect(dateCounter.value == 0)
         #expect(formatterCounter.value == 0)
         #expect(sinkCounter.value == 0)
         #expect(messageCounter.value == 0)
+        #expect(attributesCounter.value == 0)
     }
 
     @Test("Convenience methods route to the corresponding level")
@@ -136,19 +150,117 @@ struct PrintLoggerTests {
         ])
     }
 
-    @Test("Emitted message is evaluated exactly once")
-    func messageEvaluatedExactlyOnce() {
+    @Test("Message and attributes are evaluated exactly once on emit")
+    func payloadEvaluatedExactlyOnce() {
         let recorder = StringRecorder()
-        let counter = CallCounter()
+        let messageCounter = CallCounter()
+        let attributesCounter = CallCounter()
         let logger = PrintLogger(
             minimumLevel: .verbose,
             dateProvider: { fixedDate },
             timestampFormatter: { _ in "TS" },
             sink: { recorder.append($0) }
         )
-        logger.log(.info, "D", recordEvaluationAndReturn(counter, "ok"))
-        #expect(counter.value == 1)
-        #expect(recorder.entries == ["[TS] [info] [D] ok"])
+        logger.log(
+            .info,
+            "D",
+            recordEvaluationAndReturn(messageCounter, "ok"),
+            attributes: recordEvaluationAndReturn(attributesCounter, [LogAttribute("k", "v")])
+        )
+        #expect(messageCounter.value == 1)
+        #expect(attributesCounter.value == 1)
+        #expect(recorder.entries == ["[TS] [info] [D] ok {k=v}"])
+    }
+
+    // MARK: Privacy redaction
+
+    @Test("Public message segment renders verbatim")
+    func publicSegmentRendersVerbatim() {
+        let recorder = StringRecorder()
+        let logger = PrintLogger(
+            minimumLevel: .verbose,
+            dateProvider: { fixedDate },
+            timestampFormatter: { _ in "TS" },
+            sink: { recorder.append($0) }
+        )
+        let name = "Alice"
+        logger.info("Auth", "User \(name) signed in")
+        #expect(recorder.entries == ["[TS] [info] [Auth] User Alice signed in"])
+    }
+
+    @Test("Private message segment renders as <private>")
+    func privateSegmentRedacted() {
+        let recorder = StringRecorder()
+        let logger = PrintLogger(
+            minimumLevel: .verbose,
+            dateProvider: { fixedDate },
+            timestampFormatter: { _ in "TS" },
+            sink: { recorder.append($0) }
+        )
+        let name = "Alice"
+        logger.info("Auth", "User \(name, privacy: .private) signed in")
+        #expect(recorder.entries == ["[TS] [info] [Auth] User <private> signed in"])
+    }
+
+    @Test("Sensitive message segment renders as <redacted>")
+    func sensitiveSegmentRedacted() {
+        let recorder = StringRecorder()
+        let logger = PrintLogger(
+            minimumLevel: .verbose,
+            dateProvider: { fixedDate },
+            timestampFormatter: { _ in "TS" },
+            sink: { recorder.append($0) }
+        )
+        let token = "ey..."
+        logger.info("Auth", "Token \(token, privacy: .sensitive)")
+        #expect(recorder.entries == ["[TS] [info] [Auth] Token <redacted>"])
+    }
+
+    @Test("Public attribute renders as key=value")
+    func publicAttributeRenders() {
+        let recorder = StringRecorder()
+        let logger = PrintLogger(
+            minimumLevel: .verbose,
+            dateProvider: { fixedDate },
+            timestampFormatter: { _ in "TS" },
+            sink: { recorder.append($0) }
+        )
+        logger.info("Net", "ok", attributes: [LogAttribute("path", "/v1/users")])
+        #expect(recorder.entries == ["[TS] [info] [Net] ok {path=/v1/users}"])
+    }
+
+    @Test("Private attribute renders as key=<private>")
+    func privateAttributeRedacted() {
+        let recorder = StringRecorder()
+        let logger = PrintLogger(
+            minimumLevel: .verbose,
+            dateProvider: { fixedDate },
+            timestampFormatter: { _ in "TS" },
+            sink: { recorder.append($0) }
+        )
+        logger.info(
+            "Auth",
+            "ok",
+            attributes: [LogAttribute("user", "alice", privacy: .private)]
+        )
+        #expect(recorder.entries == ["[TS] [info] [Auth] ok {user=<private>}"])
+    }
+
+    @Test("Sensitive attribute renders as key=<redacted>")
+    func sensitiveAttributeRedacted() {
+        let recorder = StringRecorder()
+        let logger = PrintLogger(
+            minimumLevel: .verbose,
+            dateProvider: { fixedDate },
+            timestampFormatter: { _ in "TS" },
+            sink: { recorder.append($0) }
+        )
+        logger.info(
+            "Auth",
+            "ok",
+            attributes: [LogAttribute("token", "ey...", privacy: .sensitive)]
+        )
+        #expect(recorder.entries == ["[TS] [info] [Auth] ok {token=<redacted>}"])
     }
 
     @Test("Default ISO 8601 formatter emits UTC with fractional seconds")

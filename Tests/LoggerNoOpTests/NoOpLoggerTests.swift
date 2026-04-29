@@ -20,7 +20,7 @@ private final class CallCounter: @unchecked Sendable {
     }
 }
 
-private func recordEvaluationAndReturn(_ counter: CallCounter, _ value: String) -> String {
+private func recordEvaluationAndReturn<T>(_ counter: CallCounter, _ value: T) -> T {
     counter.tick()
     return value
 }
@@ -28,7 +28,7 @@ private func recordEvaluationAndReturn(_ counter: CallCounter, _ value: String) 
 @Suite("NoOpLogger")
 struct NoOpLoggerTests {
     @Test(
-        "Autoclosure is not evaluated for any LoggerLevel",
+        "Message autoclosure is not evaluated for any LoggerLevel",
         arguments: [
             LoggerLevel.disabled,
             .verbose,
@@ -38,15 +38,38 @@ struct NoOpLoggerTests {
             .error
         ]
     )
-    func autoclosureNotEvaluatedForAnyLevel(level: LoggerLevel) {
+    func messageAutoclosureNotEvaluatedForAnyLevel(level: LoggerLevel) {
         let logger = NoOpLogger()
         let counter = CallCounter()
         logger.log(level, "Test", recordEvaluationAndReturn(counter, "msg"))
         #expect(counter.value == 0)
     }
 
-    @Test("Autoclosure is not evaluated by any convenience method")
-    func conveniencesDoNotEvaluate() {
+    @Test(
+        "Attributes autoclosure is not evaluated for any LoggerLevel",
+        arguments: [
+            LoggerLevel.disabled,
+            .verbose,
+            .debug,
+            .info,
+            .warning,
+            .error
+        ]
+    )
+    func attributesAutoclosureNotEvaluatedForAnyLevel(level: LoggerLevel) {
+        let logger = NoOpLogger()
+        let counter = CallCounter()
+        logger.log(
+            level,
+            "Test",
+            "msg",
+            attributes: recordEvaluationAndReturn(counter, [LogAttribute("k", "v")])
+        )
+        #expect(counter.value == 0)
+    }
+
+    @Test("Convenience methods do not evaluate message")
+    func conveniencesDoNotEvaluateMessage() {
         let logger = NoOpLogger()
         let counter = CallCounter()
         logger.verbose("Test", recordEvaluationAndReturn(counter, "v"))
@@ -54,6 +77,18 @@ struct NoOpLoggerTests {
         logger.info("Test", recordEvaluationAndReturn(counter, "i"))
         logger.warning("Test", recordEvaluationAndReturn(counter, "w"))
         logger.error("Test", recordEvaluationAndReturn(counter, "e"))
+        #expect(counter.value == 0)
+    }
+
+    @Test("Convenience methods do not evaluate attributes")
+    func conveniencesDoNotEvaluateAttributes() {
+        let logger = NoOpLogger()
+        let counter = CallCounter()
+        logger.verbose("Test", "v", attributes: recordEvaluationAndReturn(counter, []))
+        logger.debug("Test", "d", attributes: recordEvaluationAndReturn(counter, []))
+        logger.info("Test", "i", attributes: recordEvaluationAndReturn(counter, []))
+        logger.warning("Test", "w", attributes: recordEvaluationAndReturn(counter, []))
+        logger.error("Test", "e", attributes: recordEvaluationAndReturn(counter, []))
         #expect(counter.value == 0)
     }
 

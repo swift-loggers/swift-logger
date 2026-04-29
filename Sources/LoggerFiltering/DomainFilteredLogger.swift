@@ -1,34 +1,40 @@
 import Loggers
 
 /// A `Logger` that applies a per-domain severity threshold and forwards
-/// surviving messages to an upstream `Logger`.
+/// surviving entries to an upstream `Logger`.
 ///
-/// `DomainFilteredLogger` is a decorator: it does not render messages
+/// `DomainFilteredLogger` is a decorator: it does not render entries
 /// itself. After the threshold check it delegates to its upstream
-/// logger, which can be any `Logger` value (a print backend, a recording
-/// logger in tests, another decorator, and so on).
+/// logger, which can be any `Logger` value (a print backend, a
+/// recording logger in tests, another decorator, and so on).
 ///
 /// ## Filtering
 ///
-/// `DomainFilteredLogger` drops a message without forwarding it and
-/// without evaluating its `message` closure when either of the following
-/// is true:
+/// `DomainFilteredLogger` drops an entry without forwarding it and
+/// without evaluating `message` or `attributes` when either of the
+/// following is true:
 ///
 /// - `level == .disabled`
 /// - the severity of `level` is below the effective threshold for
 ///   `domain`. The effective threshold is
 ///   ``domainMinimumLevels``\[`domain`\] when present, otherwise
 ///   ``defaultMinimumLevel``.
+///
+/// When the entry passes the filter, both autoclosures are forwarded
+/// to the upstream logger **without being evaluated** at this layer.
+/// The upstream logger owns the decision of whether and when to read
+/// them.
 public struct DomainFilteredLogger: Logger {
     /// A severity threshold for ``DomainFilteredLogger``.
     ///
-    /// `MinimumLevel` is intentionally severity-only and does not include a
-    /// `disabled` case: per the `LoggerLevel` contract, `disabled` is a
-    /// per-message sentinel and must not be used as a threshold value.
-    /// To turn off logging entirely, use a logger that drops every message
-    /// instead of configuring a threshold.
+    /// `MinimumLevel` is intentionally severity-only and does not
+    /// include a `disabled` case: per the `LoggerLevel` contract,
+    /// `disabled` is a per-message sentinel and must not be used as a
+    /// threshold value. To turn off logging entirely, use a logger
+    /// that drops every entry instead of configuring a threshold.
     public enum MinimumLevel: CaseIterable, Sendable {
-        /// The most detailed severity, intended for fine-grained tracing.
+        /// The most detailed severity, intended for fine-grained
+        /// tracing.
         case verbose
 
         /// A detailed severity intended for debugging.
@@ -37,7 +43,8 @@ public struct DomainFilteredLogger: Logger {
         /// An informational severity describing normal operation.
         case info
 
-        /// A severity for potential issues that do not yet stop execution.
+        /// A severity for potential issues that do not yet stop
+        /// execution.
         case warning
 
         /// A severity for error conditions that require attention.
@@ -49,12 +56,12 @@ public struct DomainFilteredLogger: Logger {
         public static let defaultLevel = MinimumLevel.warning
     }
 
-    /// The minimum severity applied to any domain that is not listed in
-    /// ``domainMinimumLevels``.
+    /// The minimum severity applied to any domain that is not listed
+    /// in ``domainMinimumLevels``.
     public let defaultMinimumLevel: MinimumLevel
 
-    /// Per-domain minimum severities. A domain whose key is absent from
-    /// this dictionary uses ``defaultMinimumLevel``.
+    /// Per-domain minimum severities. A domain whose key is absent
+    /// from this dictionary uses ``defaultMinimumLevel``.
     public let domainMinimumLevels: [LoggerDomain: MinimumLevel]
 
     private let upstream: any Logger
@@ -62,14 +69,14 @@ public struct DomainFilteredLogger: Logger {
     /// Creates a `DomainFilteredLogger`.
     ///
     /// - Parameters:
-    ///   - upstream: The `Logger` that receives messages that pass the
+    ///   - upstream: The `Logger` that receives entries that pass the
     ///     threshold check.
     ///   - defaultMinimumLevel: The minimum severity applied to any
     ///     domain not present in `domainMinimumLevels`. Defaults to
     ///     ``MinimumLevel/defaultLevel``.
-    ///   - domainMinimumLevels: Per-domain minimum severities. A domain
-    ///     whose key is absent uses `defaultMinimumLevel`. Defaults to
-    ///     an empty dictionary.
+    ///   - domainMinimumLevels: Per-domain minimum severities. A
+    ///     domain whose key is absent uses `defaultMinimumLevel`.
+    ///     Defaults to an empty dictionary.
     public init(
         upstream: any Logger,
         defaultMinimumLevel: MinimumLevel = .defaultLevel,
@@ -83,12 +90,15 @@ public struct DomainFilteredLogger: Logger {
     public func log(
         _ level: LoggerLevel,
         _ domain: LoggerDomain,
-        _ message: @autoclosure @escaping @Sendable () -> String
+        _ message: @autoclosure @escaping @Sendable () -> LogMessage,
+        attributes: @autoclosure @escaping @Sendable () -> [LogAttribute]
     ) {
         guard level != .disabled else { return }
         let threshold = domainMinimumLevels[domain] ?? defaultMinimumLevel
         guard level >= threshold.asLoggerLevel else { return }
-        upstream.log(level, domain, message())
+        // Forward both autoclosures without evaluating them. The
+        // upstream logger owns the decision of whether to read them.
+        upstream.log(level, domain, message(), attributes: attributes())
     }
 }
 
