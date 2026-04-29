@@ -35,7 +35,7 @@ public struct DomainFilteredLogger: Logger {
     public enum MinimumLevel: CaseIterable, Sendable {
         /// The most detailed severity, intended for fine-grained
         /// tracing.
-        case verbose
+        case trace
 
         /// A detailed severity intended for debugging.
         case debug
@@ -43,12 +43,20 @@ public struct DomainFilteredLogger: Logger {
         /// An informational severity describing normal operation.
         case info
 
+        /// A normal but significant severity worth surfacing above
+        /// everyday `info` traffic.
+        case notice
+
         /// A severity for potential issues that do not yet stop
         /// execution.
         case warning
 
         /// A severity for error conditions that require attention.
         case error
+
+        /// A severity for severe conditions that require immediate
+        /// attention.
+        case critical
 
         /// The default minimum severity used when none is specified.
         ///
@@ -105,11 +113,13 @@ public struct DomainFilteredLogger: Logger {
 extension DomainFilteredLogger.MinimumLevel {
     fileprivate var asLoggerLevel: LoggerLevel {
         switch self {
-        case .verbose: return .verbose
+        case .trace: return .trace
         case .debug: return .debug
         case .info: return .info
+        case .notice: return .notice
         case .warning: return .warning
         case .error: return .error
+        case .critical: return .critical
         }
     }
 }

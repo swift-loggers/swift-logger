@@ -39,6 +39,12 @@
 ///         LogAttribute("path", "/v1/users")
 ///     ])
 ///
+/// One convenience method exists per severity level: `trace`,
+/// `debug`, `info`, `notice`, `warning`, `error`, and `critical`.
+/// None of them ever emits ``LoggerLevel/disabled``; pass that
+/// sentinel through ``log(_:_:_:attributes:)`` directly to mark a
+/// single call as skippable.
+///
 /// ## Sendable
 ///
 /// `Logger` refines `Sendable`, so a value can be passed across
@@ -117,14 +123,14 @@ extension Logger {
 }
 
 extension Logger {
-    /// Emits a structured entry at ``LoggerLevel/verbose``.
+    /// Emits a structured entry at ``LoggerLevel/trace``.
     @inlinable
-    public func verbose(
+    public func trace(
         _ domain: LoggerDomain,
         _ message: @autoclosure @escaping @Sendable () -> LogMessage,
         attributes: @autoclosure @escaping @Sendable () -> [LogAttribute] = []
     ) {
-        log(.verbose, domain, message(), attributes: attributes())
+        log(.trace, domain, message(), attributes: attributes())
     }
 
     /// Emits a structured entry at ``LoggerLevel/debug``.
@@ -147,6 +153,16 @@ extension Logger {
         log(.info, domain, message(), attributes: attributes())
     }
 
+    /// Emits a structured entry at ``LoggerLevel/notice``.
+    @inlinable
+    public func notice(
+        _ domain: LoggerDomain,
+        _ message: @autoclosure @escaping @Sendable () -> LogMessage,
+        attributes: @autoclosure @escaping @Sendable () -> [LogAttribute] = []
+    ) {
+        log(.notice, domain, message(), attributes: attributes())
+    }
+
     /// Emits a structured entry at ``LoggerLevel/warning``.
     @inlinable
     public func warning(
@@ -166,18 +182,28 @@ extension Logger {
     ) {
         log(.error, domain, message(), attributes: attributes())
     }
+
+    /// Emits a structured entry at ``LoggerLevel/critical``.
+    @inlinable
+    public func critical(
+        _ domain: LoggerDomain,
+        _ message: @autoclosure @escaping @Sendable () -> LogMessage,
+        attributes: @autoclosure @escaping @Sendable () -> [LogAttribute] = []
+    ) {
+        log(.critical, domain, message(), attributes: attributes())
+    }
 }
 
 extension Logger {
-    /// Emits a `String` entry at ``LoggerLevel/verbose``.
+    /// Emits a `String` entry at ``LoggerLevel/trace``.
     @inlinable
-    public func verbose(
+    public func trace(
         _ domain: LoggerDomain,
         _ message: @autoclosure @escaping @Sendable () -> String,
         attributes: @autoclosure @escaping @Sendable () -> [LogAttribute] = []
     ) {
         log(
-            .verbose,
+            .trace,
             domain,
             LogMessage(stringLiteral: message()),
             attributes: attributes()
@@ -214,6 +240,21 @@ extension Logger {
         )
     }
 
+    /// Emits a `String` entry at ``LoggerLevel/notice``.
+    @inlinable
+    public func notice(
+        _ domain: LoggerDomain,
+        _ message: @autoclosure @escaping @Sendable () -> String,
+        attributes: @autoclosure @escaping @Sendable () -> [LogAttribute] = []
+    ) {
+        log(
+            .notice,
+            domain,
+            LogMessage(stringLiteral: message()),
+            attributes: attributes()
+        )
+    }
+
     /// Emits a `String` entry at ``LoggerLevel/warning``.
     @inlinable
     public func warning(
@@ -238,6 +279,21 @@ extension Logger {
     ) {
         log(
             .error,
+            domain,
+            LogMessage(stringLiteral: message()),
+            attributes: attributes()
+        )
+    }
+
+    /// Emits a `String` entry at ``LoggerLevel/critical``.
+    @inlinable
+    public func critical(
+        _ domain: LoggerDomain,
+        _ message: @autoclosure @escaping @Sendable () -> String,
+        attributes: @autoclosure @escaping @Sendable () -> [LogAttribute] = []
+    ) {
+        log(
+            .critical,
             domain,
             LogMessage(stringLiteral: message()),
             attributes: attributes()
