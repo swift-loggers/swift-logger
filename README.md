@@ -65,20 +65,30 @@ let package = Package(
 
 ## Quick start
 
-The message stays human-readable; structured data goes into attributes.
-Routes are stable, identifiers are private. Credentials are never
-logged.
+The same `logger` carries plain strings, privacy-annotated
+interpolation, and structured attributes -- one shape per operation,
+not all three crammed into a single method:
 
 ```swift
 import LoggerLibrary
 
 extension LoggerDomain {
-    static let network: LoggerDomain = "Network"
     static let auth: LoggerDomain = "Auth"
 }
 
 struct AuthService {
     let logger: any Logger
+
+    func signOut() {
+        logger.info(.auth, "User signed out")
+    }
+
+    func validate(username: String) {
+        logger.debug(
+            .auth,
+            "Validating input for \(username, privacy: .private)"
+        )
+    }
 
     func signIn(username: String, password _: String) {
         let success = true
@@ -86,14 +96,14 @@ struct AuthService {
             .auth,
             "Sign-in \(success ? "succeeded" : "failed")",
             attributes: [
-                LogAttribute("http.method", "POST"),
-                LogAttribute("http.route", "/v1/auth/sign-in"),
-                LogAttribute("http.status_code", 200),
                 LogAttribute("auth.method", "password"),
                 LogAttribute("auth.success", success),
                 LogAttribute("auth.username", username, privacy: .private)
             ]
         )
+        // Password is bound to `_` so the service never even names it
+        // when logging; an HTTP client downstream owns the network
+        // call and any HTTP-level logging.
     }
 }
 ```
