@@ -63,7 +63,7 @@ struct PrintLoggerTests {
     func defaultMinimumLevelIsWarning() throws {
         let recorder = StringRecorder()
         let logger = PrintLogger(sink: { recorder.append($0) })
-        logger.log(.trace, "D", "v")
+        logger.log(.trace, "D", "t")
         logger.log(.debug, "D", "d")
         logger.log(.info, "D", "i")
         logger.log(.warning, "D", "w")
