@@ -256,20 +256,6 @@ Threshold-aware adapters expose their own nested
 `.trace`, `.debug`, `.info`, `.notice`, `.warning`, `.error`,
 `.critical`. `.disabled` is never a valid threshold value.
 
-Adapters that target a backend with a different level set map each
-`LoggerLevel` onto the closest native severity. The reference
-mappings used by the shipped adapters and the planned bridges are:
-
-| `LoggerLevel` | OSLog       | swift-log  |
-|---------------|-------------|------------|
-| `trace`       | `debug`     | `trace`    |
-| `debug`       | `debug`     | `debug`    |
-| `info`        | `info`      | `info`     |
-| `notice`      | `default`   | `notice`   |
-| `warning`     | `default`   | `warning`  |
-| `error`       | `error`     | `error`    |
-| `critical`    | `fault`     | `critical` |
-
 ## Domains
 
 `LoggerDomain` identifies the subsystem a message comes from. Define
