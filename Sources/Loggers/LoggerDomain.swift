@@ -23,6 +23,7 @@ public struct LoggerDomain:
     RawRepresentable,
     CustomStringConvertible,
     ExpressibleByStringLiteral,
+    Codable,
     Hashable,
     Sendable {
     /// The textual identifier of this domain.
@@ -55,5 +56,15 @@ public struct LoggerDomain:
     @inlinable
     public var description: String {
         rawValue
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.init(rawValue: try container.decode(String.self))
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
     }
 }

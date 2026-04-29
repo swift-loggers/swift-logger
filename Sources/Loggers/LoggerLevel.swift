@@ -1,4 +1,4 @@
-/// A log level tag attached to log messages, plus a sentinel for messages
+/// A log level tag attached to log entries, plus a sentinel for entries
 /// that should be suppressed unconditionally.
 ///
 /// `LoggerLevel` carries two distinct kinds of values:
@@ -7,32 +7,33 @@
 ///   ``warning``, and ``error``, ordered from least to most severe. These
 ///   form a threshold lattice and are the only values produced by the
 ///   convenience methods on ``Logger``.
-/// - The non-severity sentinel ``disabled``, which marks a message as
+/// - The non-severity sentinel ``disabled``, which marks an entry as
 ///   skippable regardless of threshold. The convenience methods on
 ///   ``Logger`` never emit ``disabled``; it can only be passed by
-///   calling ``Logger/log(_:_:_:)`` directly.
+///   calling ``Logger/log(_:_:_:attributes:)`` directly.
 ///
 /// `Comparable` orders only the five severities meaningfully. ``disabled``
 /// participates in the order so the type can be totally sorted, but the
 /// order is a representation detail; treating ``disabled`` as a threshold
-/// contradicts its meaning. Implementations of ``Logger`` must drop a
-/// message tagged ``disabled`` and must not evaluate its `message`
-/// closure. A typical threshold-aware implementation:
+/// contradicts its meaning. Implementations of ``Logger`` must drop an
+/// entry tagged ``disabled`` and must not evaluate its `message` or
+/// `attributes` autoclosures. A typical threshold-aware implementation:
 ///
 ///     guard threshold != .disabled, level != .disabled, level >= threshold else { return }
 ///
-/// To turn off logging entirely, use a logger that drops every message
+/// To turn off logging entirely, use a logger that drops every entry
 /// rather than setting a threshold.
 ///
 /// The raw value of each case is its case name (`"disabled"`, `"verbose"`,
 /// and so on). This is part of the public contract and is suitable for
 /// JSON or log file serialization.
-public enum LoggerLevel: String, CaseIterable, Sendable {
-    /// A sentinel marking a message as suppressible regardless of threshold.
+public enum LoggerLevel: String, CaseIterable, Codable, Sendable {
+    /// A sentinel marking an entry as suppressible regardless of threshold.
     ///
-    /// Implementations of ``Logger`` must drop a message tagged with this
-    /// case and must not evaluate its `message` closure. It is not a
-    /// severity level and must not be used as a threshold value.
+    /// Implementations of ``Logger`` must drop an entry tagged with this
+    /// case and must not evaluate its `message` or `attributes`
+    /// autoclosures. It is not a severity level and must not be used as
+    /// a threshold value.
     case disabled
 
     /// The most detailed severity, intended for fine-grained tracing.
