@@ -30,9 +30,10 @@ This package ships five products:
 
 ## Installation
 
-Add `swift-logger` as a dependency in `Package.swift` and pick a
-product as a target dependency. Until the first tagged release, track
-`main`:
+Add `swift-logger` as a dependency in `Package.swift` and depend on
+`LoggerLibrary` -- the umbrella product that re-exports the core
+abstractions and every built-in adapter. This is the recommended
+default for almost every consumer:
 
 ```swift
 // swift-tools-version: 6.0
@@ -41,7 +42,37 @@ import PackageDescription
 let package = Package(
     name: "MyApp",
     dependencies: [
-        .package(url: "https://github.com/swift-loggers/swift-logger", branch: "main")
+        .package(url: "https://github.com/swift-loggers/swift-logger", from: "0.1.0")
+    ],
+    targets: [
+        .target(
+            name: "MyApp",
+            dependencies: [
+                .product(name: "LoggerLibrary", package: "swift-logger")
+            ]
+        )
+    ]
+)
+```
+
+The examples use SwiftPM's `from:` requirement, so consumers
+follow tagged releases starting at `0.1.0` (up to but not
+including the next major version). Applications that require a
+fully pinned dependency can use `exact: "0.1.0"` instead.
+
+If you want a smaller surface, depend on individual products
+instead of `LoggerLibrary` and pick whichever subset you actually
+import. The package dependency stays the same; only the target
+dependencies change:
+
+```swift
+// swift-tools-version: 6.0
+import PackageDescription
+
+let package = Package(
+    name: "MyApp",
+    dependencies: [
+        .package(url: "https://github.com/swift-loggers/swift-logger", from: "0.1.0")
     ],
     targets: [
         .target(
@@ -50,13 +81,10 @@ let package = Package(
                 // Protocol-only, zero dependencies, write your own backend:
                 .product(name: "Loggers", package: "swift-logger"),
 
-                // Individual backends:
+                // Built-in adapters; depend on whichever you import:
                 .product(name: "LoggerPrint", package: "swift-logger"),
                 .product(name: "LoggerFiltering", package: "swift-logger"),
-                .product(name: "LoggerNoOp", package: "swift-logger"),
-
-                // Umbrella that re-exports all of the above:
-                .product(name: "LoggerLibrary", package: "swift-logger")
+                .product(name: "LoggerNoOp", package: "swift-logger")
             ]
         )
     ]
